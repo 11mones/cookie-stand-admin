@@ -32,9 +32,7 @@ function renderHeader() {
 }
 
 function renderMainForm() {
-
   const [formFilled, setFormFilled] = useState(false);
-
   const [formData, setFormData] = useState({
     location: '',
     minCustomers: '',
@@ -42,9 +40,17 @@ function renderMainForm() {
     avgCookies: '',
   });
 
-
   const handleFormSubmit = (event) => {
     event.preventDefault();
+
+    const newFormData = {
+      location: event.target.location.value,
+      minCustomers: event.target.minCustomers.value,
+      maxCustomers: event.target.maxCustomers.value,
+      avgCookies: event.target.avgCookies.value,
+    };
+
+    setFormData(newFormData);
     setFormFilled(true);
   };
 
@@ -66,8 +72,6 @@ function renderMainForm() {
               type="text"
               id="location"
               className="flex-grow px-2 py-2 rounded"
-              style={{ marginLeft: '0' }}
-              onChange={(event) => setFormData({ ...formData, location: event.target.value })}
             />
           </div>
           <div className="flex mb-4">
@@ -79,7 +83,6 @@ function renderMainForm() {
                 type="number"
                 id="minCustomers"
                 className="w-full px-4 py-2 rounded"
-                onChange={(event) => setFormData({ ...formData, minCustomers: event.target.value })}
               />
             </div>
             <div className="flex-grow mr-2">
@@ -90,7 +93,6 @@ function renderMainForm() {
                 type="number"
                 id="maxCustomers"
                 className="w-full px-4 py-2 rounded"
-                onChange={(event) => setFormData({ ...formData, maxCustomers: event.target.value })}
               />
             </div>
             <div className="flex-grow">
@@ -101,7 +103,6 @@ function renderMainForm() {
                 type="number"
                 id="avgCookies"
                 className="w-full px-4 py-2 rounded"
-                onChange={(event) => setFormData({ ...formData, avgCookies: event.target.value })}
               />
             </div>
           </div>
@@ -112,16 +113,11 @@ function renderMainForm() {
         </button>
       </form>
 
-
       <div className="mt-4">
         {formFilled ? (
           <div>
-
             <h2 className="text-xl font-semibold mb-2">Cookie:</h2>
-            <p><strong>Location:</strong> {formData.location}</p>
-            <p><strong>Minimum customers per hour:</strong> {formData.minCustomers}</p>
-            <p><strong>Maximum customers per hour:</strong> {formData.maxCustomers}</p>
-            <p><strong>Average cookies per sale:</strong> {formData.avgCookies}</p>
+            <pre>{JSON.stringify(formData, null, 2)}</pre>
           </div>
         ) : (
           <p className="text-center text-xl">Report table coming soon ...</p>
