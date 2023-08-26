@@ -1,145 +1,159 @@
-import Head from 'next/head';
-import React, { useState } from 'react';
+import Head from "next/head";
+import React, { useEffect, useState } from 'react';
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import Output from "@/components/Output";
+import Input from "@/components/Input";
+import LoginForm from "@/components/LoginForm";
+
+import { useAuth } from "@/contexts/auth"
+const baseUrl = process.env.NEXT_PUBLIC_URL
+
 
 export default function Home() {
+  const { user, login, token } = useAuth() // destructuring 
 
+  // State to store the cookie stand data
+  const [cookieStands, setCookieStands] = useState([]);
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      {renderHead()}
-      {renderHeader()}
-      {renderMainForm()}
+  async function gitcook() {
+    if (token) {
+    // Assuming you've obtained the access token as shown in your code
 
-      {renderFooter()}
-    </div>
-  );
-}
-
-function renderHead() {
-  return (
-    <Head>
-      <title>Cookie Stand Admin</title>
-    </Head>
-  );
-}
-
-function renderHeader() {
-  return (
-    <header className="bg-green-500 p-8 text-4xl text-black">
-      <h1>Cookie Stand Admin</h1>
-    </header>
-  );
-}
-
-function renderMainForm() {
-  const [formFilled, setFormFilled] = useState(false);
-  const [formData, setFormData] = useState({
-    location: '',
-    minCustomers: '',
-    maxCustomers: '',
-    avgCookies: '',
-  });
-
-  const handleFormSubmit = (event) => {
-    event.preventDefault();
-
-    const newFormData = {
-      location: event.target.location.value,
-      minCustomers: event.target.minCustomers.value,
-      maxCustomers: event.target.maxCustomers.value,
-      avgCookies: event.target.avgCookies.value,
+    // Construct the URL for the protected route you want to access
+    const protectedUrl = `${baseUrl}/api/v1/Cookies/`;
+    // Set up options for the GET request to the protected route
+    const protectedOptions = {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token.access}` // Include the access token in the Authorization header
+      }
     };
+    // Make the GET request to the protected route
+    const protectedResponse = await fetch(protectedUrl, protectedOptions);
+    // Check the response status
+    if (protectedResponse.status === 200) {
+      const protectedData = await protectedResponse.json();
+      protectedData.forEach((value) => {
+        console.log(value); // This will log the current value
+        // Update the state using the previous state
+        setCookieStands((prevCookieStands) => [...prevCookieStands, value]);
+      });
+      console.log("Protected Data:", protectedData);
+    } else {
+      console.log("Failed to access protected route.");
+    }
+  }}
+  async function postDataToProtectedRoute( postData) {
+    if (token) {
+      // Construct the URL for the protected route you want to access
+      const protectedUrl =  `${baseUrl}/api/v1/Cookies/`;
+      // Set up options for the POST request to the protected route
+      const protectedOptions = {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token.access}`, // Include the access token in the Authorization header
+          "Content-Type": "application/json" // Specify content type as JSON
+        },
+        body: JSON.stringify(postData) // Convert the data to JSON and set it as the request body
+      };
+      try {
+        // Make the POST request to the protected route
+        const protectedResponse = await fetch(protectedUrl, protectedOptions);
+        // Check the response status
+        if (protectedResponse.status === 201) {
+          const responseData = await protectedResponse.json();
+          setCookieStands([...cookieStands, responseData]);
+        } else {
+          throw new Error("Failed to post data.");
+        }
+      } catch (error) {
+        throw new Error(`Error: ${error.message}`);
+      }
+    } else {
+      throw new Error("Token is missing.");
+    }
+  }
 
-    setFormData(newFormData);
-    setFormFilled(true);
+  async function deletData( idPost) {
+    if (token) {
+      // Construct the URL for the protected route you want to access
+      const protectedUrl =  `${baseUrl}/api/v1/Cookies/${idPost}`;
+      // Set up options for the POST request to the protected route
+      const protectedOptions = {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token.access}`, // Include the access token in the Authorization header
+        },
+      };
+      try {
+        // Make the POST request to the protected route
+        const protectedResponse = await fetch(protectedUrl, protectedOptions);
+        // Check the response status
+        console.log(protectedResponse.status )
+
+        if (protectedResponse.status === 204) {
+          setCookieStands([])
+          gitcook()
+        } else {
+          throw new Error("Failed to post data.");
+        }
+      } catch (error) {
+        throw new Error(`Error: ${error.message}`);
+      }
+    } else {
+      throw new Error("Token is missing.");
+    }
+  }
+
+  
+  function loginformhundeler(event) {
+    event.preventDefault();
+    const username = event.target.username.value
+    const password = event.target.password.value
+    login(username, password)
+  }
+  // Function to add a new cookie stand
+  const addCookieStand = (event) => {
+    event.preventDefault();
+    // Create a new cookie stand object
+    const newCookieStand = {
+      id: cookieStands.length + 1, // Generate a unique ID
+      location: event.target.location.value,
+      minimum_customers_per_hour: parseInt(event.target.minCustomersPerHour.value),
+      maximum_customers_per_hour: parseInt(event.target.maxCustomersPerHour.value),
+      average_cookies_per_sale: parseFloat(event.target.avgCookiesPerSale.value),
+    };
+    // Update the cookie stands state with the new cookie 
+    postDataToProtectedRoute( newCookieStand)
+    // Reset the form fields
+    event.target.reset();
   };
-
+  useEffect(() => {
+    gitcook(); // Call the function whenever the route is accessed
+  }, [token]); 
   return (
-    <main className="flex-grow container mx-auto p-4">
-      <form
-        className="bg-green-300 rounded-lg p-8 mx-auto"
-        style={{ maxWidth: '1000px' }}
-        onSubmit={handleFormSubmit}
-      >
-        <p className="mb-4 text-2xl font-bold text-center">Create a Cookie Stand</p>
-
-        <div className="mb-4">
-          <div className="mb-2 flex">
-            <label htmlFor="location" className="block w-1/4 pr-2 text-center">
-              <span className="inline-block align-middle pt-2">Location</span>
-            </label>
-            <input
-              type="text"
-              id="location"
-              className="flex-grow px-2 py-2 rounded"
-            />
-          </div>
-          <div className="flex mb-4">
-            <div className="flex-grow mr-2">
-              <label htmlFor="minCustomers" className="block mb-2">
-                Minimum customers per hour
-              </label>
-              <input
-                type="number"
-                id="minCustomers"
-                className="w-full px-4 py-2 rounded"
-              />
-            </div>
-            <div className="flex-grow mr-2">
-              <label htmlFor="maxCustomers" className="block mb-2">
-                Maximum customers per hour
-              </label>
-              <input
-                type="number"
-                id="maxCustomers"
-                className="w-full px-4 py-2 rounded"
-              />
-            </div>
-            <div className="flex-grow">
-              <label htmlFor="avgCookies" className="block mb-2">
-                Average cookies per sale
-              </label>
-              <input
-                type="number"
-                id="avgCookies"
-                className="w-full px-4 py-2 rounded"
-              />
-            </div>
-          </div>
-        </div>
-
-        <button className="bg-green-500 text-2xl text-black py-2 px-20 rounded-lg p-2">
-          Create
-        </button>
-      </form>
-
-      <div className="mt-4">
-        {formFilled ? (
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Cookie:</h2>
-            <pre>{JSON.stringify(formData, null, 2)}</pre>
-          </div>
-        ) : (
-          <p className="text-center text-xl">Report table coming soon ...</p>
-        )}
+    <>
+      <Head>
+        <title>Cookie Stand Admin</title>
+      </Head>
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex flex-col items-center flex-grow py-4 space-y-8">
+          {!user ? (
+            <LoginForm loginformhundeler={loginformhundeler} />
+          ) : (
+            <>
+              <Input handeler={addCookieStand} />
+              <Output cookieStands={cookieStands} deletData={deletData} />
+            </>
+          )}
+        </main>
       </div>
-    </main>
+      <Footer cookieStands={cookieStands} />
+
+    </>
   );
 }
 
 
-function renderPlaceholder(lastCreatedCookieStand) {
-  return (
-    <div className="bg-gray-100 p-4 rounded-md shadow-md">
-      <pre>{JSON.stringify(lastCreatedCookieStand, null, 2)}</pre>
-    </div>
-  );
-}
-
-function renderFooter() {
-  return (
-    <footer className="bg-green-500 p-4 text-2xl text-black">
-      <h1>@2023</h1>
-    </footer>
-  );
-}
